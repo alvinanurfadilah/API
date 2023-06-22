@@ -1,25 +1,22 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using API.Utilities;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace API.Models;
 
 [Table("tb_tr_bookings")]
-public class Booking
+public class Booking : BaseEntity
 {
-    [Key]
-    [Column("guid")]
-    public Guid Guid { get; set; }
-
     [Column("start_date")]
     public DateTime StartDate { get; set; }
 
     [Column("end_date")]
     public DateTime EndDate { get; set; }
 
-    [Column("status")] //untuk type data di erd putih itu enum
-    public int Status { get; set; }
+    [Column("status")]
+    public StatusLevel Status { get; set; }
 
-    [Column("remarks", TypeName = "nvarchar(255)")] //untuk constraint seharusnya null
+    [Column("remarks", TypeName = "nvarchar(255)")]
     public string Remarks { get; set; }
 
     [Column("room_guid")]
@@ -28,9 +25,7 @@ public class Booking
     [Column("employee_guid")]
     public Guid EmployeeGuid { get; set; }
 
-    [Column("created_date")]
-    public DateTime CreatedDate { get; set; }
-
-    [Column("modified_date")]
-    public DateTime ModifiedDate { get; set; }
+    //Cardinality
+    public Room? Rooms { get; set; }
+    public Employee? Employees { get; set; }
 }

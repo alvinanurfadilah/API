@@ -4,30 +4,24 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace API.Models;
 
 [Table("tb_m_accounts")]
-public class Account
+public class Account : BaseEntity
 {
-    [Key]
-    [Column("employee_guid")] //untuk pk gunakan employee_guid atau hanya guid biasa
-    public Guid EmployeeGuid { get; set; }
-
     [Column("password", TypeName = "nvarchar(255)")]
     public string Password { get; set; }
 
     [Column("is_deleted")]
     public bool IsDeleted { get; set; }
 
-    [Column("otp")] //untuk constainr seharusnya null
+    [Column("otp")]
     public int OTP { get; set; }
 
-    [Column("is_used")] //untuk constraint seharusnya null
+    [Column("is_used")]
     public bool IsUsed { get; set; }
 
-    [Column("expired_time")] //untuk constraint seharunya null
+    [Column("expired_time")]
     public DateTime ExpiredTime { get; set; }
 
-    [Column("created_date")]
-    public DateTime CreatedDate { get; set; }
-
-    [Column("modified_date")]
-    public DateTime ModifiedDate { get; set; }
+    //Cardinality
+    public ICollection<AccountRole>? AccountRoles { get; set; }
+    public Employee? Employees { get; set; }
 }

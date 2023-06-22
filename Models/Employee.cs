@@ -1,15 +1,12 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using API.Utilities;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace API.Models;
 
 [Table("tb_m_employees")]
-public class Employee
+public class Employee : BaseEntity
 {
-    [Key]
-    [Column("guid")]
-    public Guid Guid { get; set; }
-
     [Column("nik", TypeName = "nchar(6)")]
     public string NIK { get; set; }
 
@@ -22,8 +19,8 @@ public class Employee
     [Column("birth_date")]
     public DateTime BirthDate { get; set; }
 
-    [Column("gender")] //untuk type data di erd yang otuih itu enum
-    public int Gender { get; set; }
+    [Column("gender")]
+    public GenderEnum Gender { get; set; }
 
     [Column("hiring_date")]
     public DateTime HiringDate { get; set; }
@@ -34,9 +31,8 @@ public class Employee
     [Column("phone_number", TypeName = "nvarchar(20)")]
     public string PhoneNumber { get; set; }
 
-    [Column("created_date")]
-    public DateTime CreatedDate { get; set; }
-
-    [Column("modified_date")]
-    public DateTime ModifiedDate { get; set; }
+    //Cardinality
+    public Account? Accounts { get; set; }
+    public Education? Educations { get; set; }
+    public ICollection<Booking>? Bookings { get; set; }
 }
