@@ -4,5 +4,5 @@ namespace API.Contracts;
 
 public interface IUniversityRepository : IGeneralRepository<University>
 {
-    IEnumerable<University> GetByName(string name); //kenapa menggunakan collection? sedangkan hanya diambil berdasarkan nama saja
+    IEnumerable<University> GetByName(string name);
 }
