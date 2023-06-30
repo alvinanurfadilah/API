@@ -1,6 +1,8 @@
 ﻿using API.Contracts;
+using API.DTOs.Bookings;
 using API.Models;
 using API.Repositories;
+using API.Services;
 using API.Utilities;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
@@ -11,20 +13,20 @@ namespace API.Controllers;
 [Route("api/bookings")]
 public class BookingController : ControllerBase
 {
-    private readonly IBookingRepository _repository;
-    public BookingController(IBookingRepository repository)
+    private readonly BookingService _service;
+    public BookingController(BookingService service)
     {
-        _repository = repository;
+        _service = service;
     }
 
     [HttpGet]
     public IActionResult GetAll()
     {
-        var bookings = _repository.GetAll();
+        var bookings = _service.GetBooking();
 
         if (!bookings.Any())
         {
-            return NotFound(new ResponseHandler<Booking>
+            return NotFound(new ResponseHandler<BookingDTO>
             {
                 Code = StatusCodes.Status404NotFound,
                 Status = HttpStatusCode.NotFound.ToString(),
@@ -32,7 +34,7 @@ public class BookingController : ControllerBase
             });
         }
 
-        return Ok(new ResponseHandler<IEnumerable<Booking>>
+        return Ok(new ResponseHandler<IEnumerable<BookingDTO>>
         {
             Code = StatusCodes.Status200OK,
             Status = HttpStatusCode.OK.ToString(),
@@ -44,11 +46,11 @@ public class BookingController : ControllerBase
     [HttpGet("{guid}")]
     public IActionResult GetByGuid(Guid guid)
     {
-        var booking = _repository.GetByGuid(guid);
+        var bookingDTO = _service.GetBooking(guid);
 
-        if (booking is null)
+        if (bookingDTO is null)
         {
-            return NotFound(new ResponseHandler<Booking>
+            return NotFound(new ResponseHandler<BookingDTO>
             {
                 Code = StatusCodes.Status404NotFound,
                 Status = HttpStatusCode.NotFound.ToString(),
@@ -56,29 +58,29 @@ public class BookingController : ControllerBase
             });
         }
 
-        return Ok(new ResponseHandler<Booking>
+        return Ok(new ResponseHandler<BookingDTO>
         {
             Code = StatusCodes.Status200OK,
             Status = HttpStatusCode.OK.ToString(),
             Message = "Data found",
-            Data = booking
+            Data = bookingDTO
         });
     }
 
     [HttpPost]
-    public IActionResult Create(Booking booking)
+    public IActionResult Create(NewBookingDTO newBookingDTO)
     {
-        var createdBooking = _repository.Create(booking);
+        var createdBooking = _service.CreateBooking(newBookingDTO);
         if (createdBooking is null)
         {
-            return BadRequest(new ResponseHandler<Booking>
+            return BadRequest(new ResponseHandler<BookingDTO>
             {
                 Code = StatusCodes.Status400BadRequest,
                 Status = HttpStatusCode.BadRequest.ToString(),
                 Message = "Data not created!"
             });
         }
-        return Ok(new ResponseHandler<Booking>
+        return Ok(new ResponseHandler<BookingDTO>
         {
             Code = StatusCodes.Status200OK,
             Status = HttpStatusCode.OK.ToString(),
@@ -87,14 +89,13 @@ public class BookingController : ControllerBase
     }
 
     [HttpPut]
-    public IActionResult Update(Booking booking)
+    public IActionResult Update(BookingDTO bookingDTO)
     {
-        var getGuid = (Guid)typeof(Booking).GetProperty("Guid")!.GetValue(booking!);
-        var isFound = _repository.IsExist(getGuid);
+        var isUpdated = _service.UpdateBooking(bookingDTO);
 
-        if (isFound is false)
+        if (isUpdated is -1)
         {
-            return NotFound(new ResponseHandler<Booking>
+            return NotFound(new ResponseHandler<BookingDTO>
             {
                 Code = StatusCodes.Status404NotFound,
                 Status = HttpStatusCode.NotFound.ToString(),
@@ -102,11 +103,9 @@ public class BookingController : ControllerBase
             });
         }
 
-        var isUpdated = _repository.Update(booking);
-
-        if (!isUpdated)
+        if (isUpdated is 0)
         {
-            return BadRequest(new ResponseHandler<Booking>
+            return BadRequest(new ResponseHandler<BookingDTO>
             {
                 Code = StatusCodes.Status500InternalServerError,
                 Status = HttpStatusCode.InternalServerError.ToString(),
@@ -114,7 +113,7 @@ public class BookingController : ControllerBase
             });
         }
 
-        return Ok(new ResponseHandler<Booking>
+        return Ok(new ResponseHandler<BookingDTO>
         {
             Code = StatusCodes.Status200OK,
             Status = HttpStatusCode.OK.ToString(),
@@ -125,11 +124,11 @@ public class BookingController : ControllerBase
     [HttpDelete("{guid}")]
     public IActionResult Delete(Guid guid)
     {
-        var isFound = _repository.IsExist(guid);
+        var isDeleted = _service.DeleteBooking(guid);
 
-        if (isFound is false)
+        if (isDeleted is -1)
         {
-            return NotFound(new ResponseHandler<Booking>
+            return NotFound(new ResponseHandler<BookingDTO>
             {
                 Code = StatusCodes.Status404NotFound,
                 Status = HttpStatusCode.NotFound.ToString(),
@@ -137,11 +136,9 @@ public class BookingController : ControllerBase
             });
         }
 
-        var isDeleted = _repository.Delete(guid);
-
-        if (!isDeleted)
+        if (isDeleted is 0)
         {
-            return BadRequest(new ResponseHandler<Booking>
+            return BadRequest(new ResponseHandler<BookingDTO>
             {
                 Code = StatusCodes.Status500InternalServerError,
                 Status = HttpStatusCode.InternalServerError.ToString(),
@@ -149,7 +146,7 @@ public class BookingController : ControllerBase
             });
         }
 
-        return Ok(new ResponseHandler<Booking>
+        return Ok(new ResponseHandler<BookingDTO>
         {
             Code = StatusCodes.Status200OK,
             Status = HttpStatusCode.OK.ToString(),

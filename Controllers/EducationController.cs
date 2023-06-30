@@ -1,6 +1,8 @@
-﻿    using API.Contracts;
+﻿using API.Contracts;
+using API.DTOs.Educations;
 using API.Models;
 using API.Repositories;
+using API.Services;
 using API.Utilities;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
@@ -11,21 +13,21 @@ namespace API.Controllers;
 [Route("api/educations")]
 public class EducationController : ControllerBase
 {
-    private readonly IEducationRepository _repository;
+    private readonly EducationService _service;
 
-    public EducationController(IEducationRepository repository)
+    public EducationController(EducationService service)
     {
-        _repository = repository;
+        _service = service;
     }
 
     [HttpGet]
     public IActionResult GetAll()
     {
-        var educations = _repository.GetAll();
+        var educations = _service.GetEducation();
 
         if (!educations.Any())
         {
-            return NotFound(new ResponseHandler<Education>
+            return NotFound(new ResponseHandler<EducationDTO>
             {
                 Code = StatusCodes.Status404NotFound,
                 Status = HttpStatusCode.NotFound.ToString(),
@@ -33,7 +35,7 @@ public class EducationController : ControllerBase
             });
         }
 
-        return Ok(new ResponseHandler<IEnumerable<Education>>
+        return Ok(new ResponseHandler<IEnumerable<EducationDTO>>
         {
             Code = StatusCodes.Status200OK,
             Status = HttpStatusCode.OK.ToString(),
@@ -45,11 +47,11 @@ public class EducationController : ControllerBase
     [HttpGet("{guid}")]
     public IActionResult GetByGuid(Guid guid)
     {
-        var education = _repository.GetByGuid(guid);
+        var education = _service.GetEducation(guid);
 
         if (education is null)
         {
-            return NotFound(new ResponseHandler<Education>
+            return NotFound(new ResponseHandler<EducationDTO>
             {
                 Code = StatusCodes.Status404NotFound,
                 Status = HttpStatusCode.NotFound.ToString(),
@@ -57,22 +59,22 @@ public class EducationController : ControllerBase
             });
         }
 
-        return Ok(new ResponseHandler<Education>
+        return Ok(new ResponseHandler<EducationDTO>
         {
             Code = StatusCodes.Status200OK,
             Status = HttpStatusCode.OK.ToString(),
-            Message = "Data found"
+            Message = "Data found",
             Data = education
         });
     }
 
     [HttpPost]
-    public IActionResult Create(Education education)
+    public IActionResult Create(NewEducationDTO newEducationDTO)
     {
-        var createdEducation = _repository.Create(education);
+        var createdEducation = _service.CreateEducation(newEducationDTO);
         if (createdEducation is null)
         {
-            return BadRequest(new ResponseHandler<Education>
+            return BadRequest(new ResponseHandler<EducationDTO>
             {
                 Code = StatusCodes.Status400BadRequest,
                 Status = HttpStatusCode.BadRequest.ToString(),
@@ -80,7 +82,7 @@ public class EducationController : ControllerBase
             });
         }
 
-        return Ok(new ResponseHandler<Education>
+        return Ok(new ResponseHandler<EducationDTO>
         {
             Code = StatusCodes.Status200OK,
             Status = HttpStatusCode.OK.ToString(),
@@ -89,25 +91,23 @@ public class EducationController : ControllerBase
     }
 
     [HttpPut]
-    public IActionResult Update(Education education)
+    public IActionResult Update(EducationDTO educationDTO)
     {
-        var getGuid = (Guid)typeof(Education).GetProperty("Guid")!.GetValue(education!);
-        var isFound = _repository.IsExist(getGuid);
+        var isUpdated = _service.UpdateEducation(educationDTO);
 
-        if (isFound is false)
+        if (isUpdated is -1)
         {
-            return NotFound(new ResponseHandler<Education>
+            return NotFound(new ResponseHandler<EducationDTO>
             {
                 Code = StatusCodes.Status404NotFound,
                 Status = HttpStatusCode.NotFound.ToString(),
                 Message = "Id not found!"
             });
         }
-        var isUpdated = _repository.Update(education);
 
-        if (!isUpdated)
+        if (isUpdated is 0)
         {
-            return BadRequest(new ResponseHandler<Education>
+            return BadRequest(new ResponseHandler<EducationDTO>
             {
                 Code = StatusCodes.Status500InternalServerError,
                 Status = HttpStatusCode.InternalServerError.ToString(),
@@ -115,7 +115,7 @@ public class EducationController : ControllerBase
             });
         }
 
-        return Ok(new ResponseHandler<Education>
+        return Ok(new ResponseHandler<EducationDTO>
         {
             Code = StatusCodes.Status200OK,
             Status = HttpStatusCode.OK.ToString(),
@@ -126,11 +126,11 @@ public class EducationController : ControllerBase
     [HttpDelete("{guid}")]
     public IActionResult Delete(Guid guid)
     {
-        var isFound = _repository.IsExist(guid);
+        var isDeleted = _service.DeleteEducation(guid);
 
-        if (isFound is false)
+        if (isDeleted is -1)
         {
-            return NotFound(new ResponseHandler<Education>
+            return NotFound(new ResponseHandler<EducationDTO>
             {
                 Code = StatusCodes.Status404NotFound,
                 Status = HttpStatusCode.NotFound.ToString(),
@@ -138,11 +138,9 @@ public class EducationController : ControllerBase
             });
         }
 
-        var isDeleted = _repository.Delete(guid);
-
-        if (!isDeleted)
+        if (isDeleted is 0)
         {
-            return BadRequest(new ResponseHandler<Education>
+            return BadRequest(new ResponseHandler<EducationDTO>
             {
                 Code = StatusCodes.Status500InternalServerError,
                 Status = HttpStatusCode.InternalServerError.ToString(),
@@ -150,7 +148,7 @@ public class EducationController : ControllerBase
             });
         }
 
-        return Ok(new ResponseHandler<Education>
+        return Ok(new ResponseHandler<EducationDTO>
         {
             Code = StatusCodes.Status200OK,
             Status = HttpStatusCode.OK.ToString(),

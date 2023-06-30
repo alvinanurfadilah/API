@@ -1,6 +1,9 @@
 ﻿using API.Contracts;
+using API.DTOs.Accounts;
+using API.DTOs.Universities;
 using API.Models;
 using API.Repositories;
+using API.Services;
 using API.Utilities;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
@@ -11,21 +14,21 @@ namespace API.Controllers;
 [Route("api/accounts")]
 public class AccountController : ControllerBase
 {
-    private readonly IAccountRepository _repository;
+    private readonly AccountService _service;
 
-    public AccountController(IAccountRepository repository)
+    public AccountController(AccountService service)
     {
-        _repository = repository;
+        _service = service;
     }
 
     [HttpGet]
     public IActionResult GetAll()
     {
-        var accounts = _repository.GetAll();
+        var accounts = _service.GetAccount();
 
         if (!accounts.Any())
         {
-            return NotFound(new ResponseHandler<Account>
+            return NotFound(new ResponseHandler<AccountDTO>
             {
                 Code = StatusCodes.Status404NotFound,
                 Status = HttpStatusCode.NotFound.ToString(),
@@ -33,7 +36,7 @@ public class AccountController : ControllerBase
             });
         }
 
-        return Ok(new ResponseHandler<IEnumerable<Account>>
+        return Ok(new ResponseHandler<IEnumerable<AccountDTO>>
         {
             Code = StatusCodes.Status200OK,
             Status = HttpStatusCode.OK.ToString(),
@@ -45,11 +48,11 @@ public class AccountController : ControllerBase
     [HttpGet("{guid}")]
     public IActionResult GetByGuid(Guid guid)
     {
-        var account = _repository.GetByGuid(guid);
+        var account = _service.GetAccount(guid);
 
         if (account is null)
         {
-            return NotFound(new ResponseHandler<Account>
+            return NotFound(new ResponseHandler<AccountDTO>
             {
                 Code = StatusCodes.Status404NotFound,
                 Status = HttpStatusCode.NotFound.ToString(),
@@ -57,29 +60,29 @@ public class AccountController : ControllerBase
             });
         }
 
-        return Ok(new ResponseHandler<Account>
+        return Ok(new ResponseHandler<AccountDTO>
         {
             Code = StatusCodes.Status200OK,
             Status = HttpStatusCode.OK.ToString(),
-            Message = "Data found"
+            Message = "Data found",
             Data = account
         });
     }
 
     [HttpPost]
-    public IActionResult Create(Account account)
+    public IActionResult Create(NewAccountDTO newAccountDTO)
     {
-        var createdAccount = _repository.Create(account);
+        var createdAccount = _service.CreateAccount(newAccountDTO);
         if (createdAccount is null)
         {
-            return BadRequest(new ResponseHandler<Account>
+            return BadRequest(new ResponseHandler<AccountDTO>
             {
                 Code = StatusCodes.Status400BadRequest,
                 Status = HttpStatusCode.BadRequest.ToString(),
                 Message = "Data not created!"
             });
         }
-        return Ok(new ResponseHandler<Account>
+        return Ok(new ResponseHandler<AccountDTO>
         {
             Code = StatusCodes.Status200OK,
             Status = HttpStatusCode.OK.ToString(),
@@ -88,25 +91,23 @@ public class AccountController : ControllerBase
     }
 
     [HttpPut]
-    public IActionResult Update(Account account)
+    public IActionResult Update(AccountDTO accountDTO)
     {
-        var getGuid = (Guid)typeof(Account).GetProperty("Guid")!.GetValue(account!);
-        var isFound = _repository.IsExist(getGuid);
+        var isUpdated = _service.UpdateAccount(accountDTO);
 
-        if (isFound is false)
+        if (isUpdated is -1)
         {
-            return NotFound(new ResponseHandler<Account>
+            return NotFound(new ResponseHandler<AccountDTO>
             {
                 Code = StatusCodes.Status404NotFound,
                 Status = HttpStatusCode.NotFound.ToString(),
-                Message = "Id not found!"
+                Message = "Id not found"
             });
         }
-        var isUpdated = _repository.Update(account);
 
-        if (!isUpdated)
+        if (isUpdated is 0)
         {
-            return BadRequest(new ResponseHandler<Account>
+            return BadRequest(new ResponseHandler<AccountDTO>
             {
                 Code = StatusCodes.Status500InternalServerError,
                 Status = HttpStatusCode.InternalServerError.ToString(),
@@ -114,7 +115,7 @@ public class AccountController : ControllerBase
             });
         }
 
-        return Ok(new ResponseHandler<Account>
+        return Ok(new ResponseHandler<AccountDTO>
         {
             Code = StatusCodes.Status200OK,
             Status = HttpStatusCode.OK.ToString(),
@@ -123,13 +124,13 @@ public class AccountController : ControllerBase
     }
 
     [HttpDelete("{guid}")]
-    public IActionResult Delete(Guid guid)
+    public IActionResult DeleteAccount(Guid guid)
     {
-        var isFound = _repository.IsExist(guid);
+        var isDeleted = _service.DeleteAccount(guid);
 
-        if (isFound is false)
+        if (isDeleted is -1)
         {
-            return NotFound(new ResponseHandler<Account>
+            return NotFound(new ResponseHandler<AccountDTO>
             {
                 Code = StatusCodes.Status404NotFound,
                 Status = HttpStatusCode.NotFound.ToString(),
@@ -137,11 +138,9 @@ public class AccountController : ControllerBase
             });
         }
 
-        var isDeleted = _repository.Delete(guid);
-
-        if (!isDeleted)
+        if (isDeleted is 0)
         {
-            return BadRequest(new ResponseHandler<Account>
+            return BadRequest(new ResponseHandler<AccountDTO>
             {
                 Code = StatusCodes.Status500InternalServerError,
                 Status = HttpStatusCode.InternalServerError.ToString(),
@@ -149,7 +148,7 @@ public class AccountController : ControllerBase
             });
         }
 
-        return Ok(new ResponseHandler<Account>
+        return Ok(new ResponseHandler<AccountDTO>
         {
             Code = StatusCodes.Status200OK,
             Status = HttpStatusCode.OK.ToString(),

@@ -1,6 +1,8 @@
 ﻿using API.Contracts;
+using API.DTOs.Roles;
 using API.Models;
 using API.Repositories;
+using API.Services;
 using API.Utilities;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
@@ -8,24 +10,24 @@ using System.Net;
 namespace API.Controllers;
 
 [ApiController]
-[Route("api/roles")]
-public class RoleController : ControllerBase
+[Route("api/roleDTOs")]
+public class RoleDTOController : ControllerBase
 {
-    private readonly IRoleRepository _repository;
+    private readonly RoleService _service;
 
-    public RoleController(IRoleRepository repository)
+    public RoleDTOController(RoleService service)
     {
-        _repository = repository;
+        _service = service;
     }
 
     [HttpGet]
     public IActionResult GetAll()
     {
-        var roles = _repository.GetAll();
+        var roles = _service.GetRole();
 
         if (!roles.Any())
         {
-            return NotFound(new ResponseHandler<Role>
+            return NotFound(new ResponseHandler<RoleDTO>
             {
                 Code = StatusCodes.Status404NotFound,
                 Status = HttpStatusCode.NotFound.ToString(),
@@ -33,7 +35,7 @@ public class RoleController : ControllerBase
             });
         }
 
-        return Ok(new ResponseHandler<IEnumerable<Role>>
+        return Ok(new ResponseHandler<IEnumerable<RoleDTO>>
         {
             Code = StatusCodes.Status200OK,
             Status = HttpStatusCode.OK.ToString(),
@@ -45,11 +47,11 @@ public class RoleController : ControllerBase
     [HttpGet("{guid}")]
     public IActionResult GetByGuid(Guid guid)
     {
-        var role = _repository.GetByGuid(guid);
+        var roleDTO = _service.GetRole(guid);
 
-        if (role is null)
+        if (roleDTO is null)
         {
-            return NotFound(new ResponseHandler<Role>
+            return NotFound(new ResponseHandler<RoleDTO>
             {
                 Code = StatusCodes.Status404NotFound,
                 Status = HttpStatusCode.NotFound.ToString(),
@@ -57,29 +59,29 @@ public class RoleController : ControllerBase
             });
         }
 
-        return Ok(new ResponseHandler<Role>
+        return Ok(new ResponseHandler<RoleDTO>
         {
             Code = StatusCodes.Status200OK,
             Status = HttpStatusCode.OK.ToString(),
             Message = "Data found",
-            Data = role
+            Data = roleDTO
         });
     }
 
     [HttpPost]
-    public IActionResult Create(Role role)
+    public IActionResult Create(NewRoleDTO newRoleDTO)
     {
-        var createdRole = _repository.Create(role);
-        if (createdRole is null)
+        var createdRoleDTO = _service.CreateRole(newRoleDTO);
+        if (createdRoleDTO is null)
         {
-            return BadRequest(new ResponseHandler<Role>
+            return BadRequest(new ResponseHandler<RoleDTO>
             {
                 Code = StatusCodes.Status400BadRequest,
                 Status = HttpStatusCode.BadRequest.ToString(),
                 Message = "Data not created!"
             });
         }
-        return Ok(new ResponseHandler<Role>
+        return Ok(new ResponseHandler<RoleDTO>
         {
             Code = StatusCodes.Status200OK,
             Status = HttpStatusCode.OK.ToString(),
@@ -88,14 +90,13 @@ public class RoleController : ControllerBase
     }
 
     [HttpPut]
-    public IActionResult Update(Role role)
+    public IActionResult Update(RoleDTO roleDTO)
     {
-        var getGuid = (Guid)typeof(Role).GetProperty("Guid")!.GetValue(role!);
-        var isFound = _repository.IsExist(getGuid);
+        var isUpdated = _service.UpdateRole(roleDTO);
 
-        if (isFound is false)
+        if (isUpdated is -1)
         {
-            return NotFound(new ResponseHandler<Role>
+            return NotFound(new ResponseHandler<RoleDTO>
             {
                 Code = StatusCodes.Status404NotFound,
                 Status = HttpStatusCode.NotFound.ToString(),
@@ -103,11 +104,9 @@ public class RoleController : ControllerBase
             });
         }
 
-        var isUpdated = _repository.Update(role);
-
-        if (!isUpdated)
+        if (isUpdated is 0)
         {
-            return BadRequest(new ResponseHandler<Role>
+            return BadRequest(new ResponseHandler<RoleDTO>
             {
                 Code = StatusCodes.Status500InternalServerError,
                 Status = HttpStatusCode.InternalServerError.ToString(),
@@ -115,7 +114,7 @@ public class RoleController : ControllerBase
             });
         }
 
-        return Ok(new ResponseHandler<Role>
+        return Ok(new ResponseHandler<RoleDTO>
         {
             Code = StatusCodes.Status200OK,
             Status = HttpStatusCode.OK.ToString(),
@@ -126,11 +125,11 @@ public class RoleController : ControllerBase
     [HttpDelete("{guid}")]
     public IActionResult Delete(Guid guid)
     {
-        var isFound = _repository.IsExist(guid);
+        var isDeleted = _service.DeleteRole(guid);
 
-        if (isFound is false)
+        if (isDeleted is -1)
         {
-            return NotFound(new ResponseHandler<Role>
+            return NotFound(new ResponseHandler<RoleDTO>
             {
                 Code = StatusCodes.Status404NotFound,
                 Status = HttpStatusCode.NotFound.ToString(),
@@ -138,11 +137,9 @@ public class RoleController : ControllerBase
             });
         }
 
-        var isDeleted = _repository.Delete(guid);
-
-        if (!isDeleted)
+        if (isDeleted is 0)
         {
-            return BadRequest(new ResponseHandler<Role>
+            return BadRequest(new ResponseHandler<RoleDTO>
             {
                 Code = StatusCodes.Status500InternalServerError,
                 Status = HttpStatusCode.InternalServerError.ToString(),
@@ -150,7 +147,7 @@ public class RoleController : ControllerBase
             });
         }
 
-        return Ok(new ResponseHandler<Role>
+        return Ok(new ResponseHandler<RoleDTO>
         {
             Code = StatusCodes.Status200OK,
             Status = HttpStatusCode.OK.ToString(),

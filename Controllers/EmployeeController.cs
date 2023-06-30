@@ -1,6 +1,7 @@
 ﻿using API.Contracts;
+using API.DTOs.Employees;
 using API.Models;
-using API.Repositories;
+using API.Services;
 using API.Utilities;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
@@ -11,21 +12,21 @@ namespace API.Controllers;
 [Route("api/employees")]
 public class EmployeeController : ControllerBase
 {
-    private readonly IEmployeeRepository _repository;
+    private readonly EmployeeService _service;
 
-    public EmployeeController(IEmployeeRepository repository)
+    public EmployeeController(EmployeeService service)
     {
-        _repository = repository;
+        _service = service;
     }
 
     [HttpGet]
     public IActionResult GetAll()
     {
-        var employees = _repository.GetAll();
+        var employees = _service.GetEmployee();
 
         if (!employees.Any())
         {
-            return NotFound(new ResponseHandler<Education>
+            return NotFound(new ResponseHandler<EmployeeDTO>
             {
                 Code = StatusCodes.Status404NotFound,
                 Status = HttpStatusCode.NotFound.ToString(),
@@ -33,7 +34,7 @@ public class EmployeeController : ControllerBase
             });
         }
 
-        return Ok(new ResponseHandler<IEnumerable<Employee>>
+        return Ok(new ResponseHandler<IEnumerable<EmployeeDTO>>
         {
             Code = StatusCodes.Status200OK,
             Status = HttpStatusCode.OK.ToString(),
@@ -45,11 +46,11 @@ public class EmployeeController : ControllerBase
     [HttpGet("{guid}")]
     public IActionResult GetByGuid(Guid guid)
     {
-        var employee = _repository.GetByGuid(guid);
+        var employee = _service.GetEmployee(guid);
 
         if (employee is null)
         {
-            return NotFound(new ResponseHandler<Education>
+            return NotFound(new ResponseHandler<EmployeeDTO>
             {
                 Code = StatusCodes.Status404NotFound,
                 Status = HttpStatusCode.NotFound.ToString(),
@@ -57,7 +58,7 @@ public class EmployeeController : ControllerBase
             });
         }
 
-        return Ok(new ResponseHandler<Employee>
+        return Ok(new ResponseHandler<EmployeeDTO>
         {
             Code = StatusCodes.Status200OK,
             Status = HttpStatusCode.OK.ToString(),
@@ -67,19 +68,19 @@ public class EmployeeController : ControllerBase
     }
 
     [HttpPost]
-    public IActionResult Create(Employee employee)
+    public IActionResult Create(NewEmployeeDTO newEmployeeDTO)
     {
-        var createdEmployee = _repository.Create(employee);
+        var createdEmployee = _service.CreateEmployee(newEmployeeDTO);
         if (createdEmployee is null)
         {
-            return BadRequest(new ResponseHandler<Employee>
+            return BadRequest(new ResponseHandler<EmployeeDTO>
             {
                 Code = StatusCodes.Status400BadRequest,
                 Status = HttpStatusCode.BadRequest.ToString(),
                 Message = "Data not created!"
             });
         }
-        return Ok(new ResponseHandler<Employee>
+        return Ok(new ResponseHandler<EmployeeDTO>
         {
             Code = StatusCodes.Status200OK,
             Status = HttpStatusCode.OK.ToString(),
@@ -88,14 +89,13 @@ public class EmployeeController : ControllerBase
     }
 
     [HttpPut]
-    public IActionResult Update(Employee employee)
+    public IActionResult Update(EmployeeDTO employeeDTO)
     {
-        var getGuid = (Guid)typeof(Employee).GetProperty("Guid")!.GetValue(employee!);
-        var isFound = _repository.IsExist(getGuid);
+        var isUpdated = _service.UpdateEmployee(employeeDTO);
 
-        if (isFound is false)
+        if (isUpdated is -1)
         {
-            return NotFound(new ResponseHandler<Employee>
+            return NotFound(new ResponseHandler<EmployeeDTO>
             {
                 Code = StatusCodes.Status404NotFound,
                 Status = HttpStatusCode.NotFound.ToString(),
@@ -103,11 +103,9 @@ public class EmployeeController : ControllerBase
             });
         }
 
-        var isUpdated = _repository.Update(employee);
-
-        if (!isUpdated)
+        if (isUpdated is 0)
         {
-            return BadRequest(new ResponseHandler<Employee>
+            return BadRequest(new ResponseHandler<EmployeeDTO>
             {
                 Code = StatusCodes.Status500InternalServerError,
                 Status = HttpStatusCode.InternalServerError.ToString(),
@@ -115,7 +113,7 @@ public class EmployeeController : ControllerBase
             });
         }
 
-        return Ok(new ResponseHandler<Employee>
+        return Ok(new ResponseHandler<EmployeeDTO>
         {
             Code = StatusCodes.Status200OK,
             Status = HttpStatusCode.OK.ToString(),
@@ -126,11 +124,11 @@ public class EmployeeController : ControllerBase
     [HttpDelete("{guid}")]
     public IActionResult Delete(Guid guid)
     {
-        var isFound = _repository.IsExist(guid);
+        var isDeleted = _service.DeleteEmployee(guid);
 
-        if (isFound is false)
+        if (isDeleted is -1)
         {
-            return NotFound(new ResponseHandler<Employee>
+            return NotFound(new ResponseHandler<EmployeeDTO>
             {
                 Code = StatusCodes.Status404NotFound,
                 Status = HttpStatusCode.NotFound.ToString(),
@@ -138,11 +136,9 @@ public class EmployeeController : ControllerBase
             });
         }
 
-        var isDeleted = _repository.Delete(guid);
-
-        if (!isDeleted)
+        if (isDeleted is 0)
         {
-            return BadRequest(new ResponseHandler<Employee>
+            return BadRequest(new ResponseHandler<EmployeeDTO>
             {
                 Code = StatusCodes.Status500InternalServerError,
                 Status = HttpStatusCode.InternalServerError.ToString(),
@@ -150,7 +146,7 @@ public class EmployeeController : ControllerBase
             });
         }
 
-        return Ok(new ResponseHandler<Employee>
+        return Ok(new ResponseHandler<EmployeeDTO>
         {
             Code = StatusCodes.Status200OK,
             Status = HttpStatusCode.OK.ToString(),
